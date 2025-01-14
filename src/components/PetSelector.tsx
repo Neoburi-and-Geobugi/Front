@@ -1,33 +1,17 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Modal,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, FlatList, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 
 type PetSelectorProps = {
   visible: boolean;
-  pets: string[];
-  selectedPet: string;
-  onSelect: (pet: string) => void;
-  onClose: () => void;
+  pets: string[]; // 반려동물 이름 목록
+  selectedPet: string; // 현재 선택된 반려동물
+  onSelect: (pet: string) => void; // 반려동물 선택 시 호출될 함수
+  onClose: () => void; // 모달 닫기
 };
 
-const PetSelector: React.FC<PetSelectorProps> = ({
-  visible,
-  pets,
-  selectedPet,
-  onSelect,
-  onClose,
-}) => {
+const PetSelector: React.FC<PetSelectorProps> = ({ visible, pets, selectedPet, onSelect, onClose }) => {
   const renderPetItem = ({ item }: { item: string }) => (
-    <TouchableOpacity
-      style={styles.petItem}
-      onPress={() => onSelect(item)}
-    >
+    <TouchableOpacity style={styles.petItem} onPress={() => onSelect(item)}>
       <Text style={selectedPet === item ? styles.petSelected : styles.petText}>
         {item}
       </Text>
@@ -35,12 +19,7 @@ const PetSelector: React.FC<PetSelectorProps> = ({
   );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalBackground}>
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>마이펫 List</Text>
@@ -65,7 +44,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 반투명 배경
   },
   modalContainer: {
     backgroundColor: '#FFF',
@@ -89,7 +68,7 @@ const styles = StyleSheet.create({
   },
   petSelected: {
     fontSize: 16,
-    color: '#6A5ACD',
+    color: '#6A5ACD', // 선택된 반려동물 강조
   },
   modalActions: {
     marginTop: 20,

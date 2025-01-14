@@ -31,7 +31,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
       // 로그인 성공 시, 응답으로 받은 JWT 토큰을 AsyncStorage에 저장
       await AsyncStorage.setItem('accessToken', response.data.accessToken);
       await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
-
+      
       // 로그인 성공 후 Home 화면으로 이동
       navigation.replace('PostLostPet');
     } catch (error) {

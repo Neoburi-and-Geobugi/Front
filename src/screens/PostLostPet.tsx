@@ -1,36 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
-import PetSelector from '../components/PetSelector'; // 반려동물 선택 모달
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native'; // React Navigation 훅 추가
 import AddressSearchModal from '../components/AddressSearchModal';
+import PetSelector from '../components/PetSelector';
 import styles from '../styles/PostLostPetStyles';
-import axios from 'axios'; // HTTP 요청 라이브러리
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PostLostPet: React.FC = () => {
+  const navigation = useNavigation(); // Navigation 객체 생성
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [mapVisible, setMapVisible] = useState(false);
-  const [selectedPet, setSelectedPet] = useState<any>(null); // 선택된 반려동물의 상세 정보
-  const [myPets, setMyPets] = useState<any[]>([]); // 반려동물 리스트
+  const [selectedPet, setSelectedPet] = useState<any>(null);
+  const [myPets, setMyPets] = useState<any[]>([]);
+  const [userId, setUserId] = useState<number | null>(null);
 
-  // 반려동물 리스트를 가져오는 함수
-  const fetchMyPets = async () => {
+  // JWT 토큰 가져오기
+  const getToken = useCallback(async (): Promise<string | null> => {
     try {
-      const response = await axios.get('http://10.0.2.2:8080/pets/list/{userId}'); // 사용자의 반려동물 리스트 조회 API 호출
-      setMyPets(response.data); // 가져온 반려동물 리스트 설정
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        Alert.alert('오류', '로그인이 필요합니다.');
+        return null;
+      }
+      return token;
+    } catch (error) {
+      console.error('토큰 가져오기 실패:', error);
+      Alert.alert('오류', '토큰을 가져오는 데 실패했습니다.');
+      return null;
+    }
+  }, []);
+
+  // 반려동물 리스트 가져오기
+  const fetchMyPets = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {return;}
+
+      const response = await axios.get('http://10.0.2.2:8080/pets/list', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const petsData = response.data;
+      setMyPets(petsData);
+
+      if (petsData.length > 0) {
+        setUserId(petsData[0].user.id);
+      }
     } catch (error) {
       console.error('반려동물 데이터 가져오기 실패:', error);
       Alert.alert('오류', '반려동물 데이터를 불러오는 데 실패했습니다.');
     }
-  };
+  }, [getToken]);
 
-  // 컴포넌트 렌더링 시 반려동물 리스트를 가져옵니다.
   useEffect(() => {
     fetchMyPets();
-  }, []);
+  }, [fetchMyPets]);
 
-  // 잃어버린 게시물 등록 함수
+  // 게시글 등록
   const handleRegister = async () => {
     if (!title || !description || !location || !selectedPet) {
       Alert.alert('오류', '모든 필드를 입력해주세요.');
@@ -38,21 +68,38 @@ const PostLostPet: React.FC = () => {
     }
 
     try {
+      const token = await getToken();
+      if (!token) {return;}
+
       const lostPostData = {
         title,
         description,
         location,
-        petId: selectedPet.id, // 선택된 반려동물의 ID
+        petId: selectedPet.id,
+        userId,
+        lostPhoto: '',
+        status: 'active',
+        scrap: 0,
+        createdAt: new Date().toISOString(),
       };
 
-      const response = await axios.post('http://10.0.2.2:8080/lost-posts', lostPostData); // LostPost 생성 API
+      const response = await axios.post('http://10.0.2.2:8080/lost-posts', lostPostData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       Alert.alert('등록 완료', '게시물이 등록되었습니다!');
-    } catch (error) {
+      console.log('등록된 LostPost:', response.data);
+
+      // 지도 화면으로 이동
+      navigation.replace('kakaoMapScreen');
+    } catch (error: any) {
       console.error('게시물 등록 실패:', error);
-      Alert.alert('오류', '게시물 등록에 실패했습니다.');
+      const errorMessage = error.response?.data?.message || '게시물 등록에 실패했습니다.';
+      Alert.alert('오류', errorMessage);
     }
   };
 
+  // 주소 선택 핸들러
   const handleAddressSelected = (address: { zonecode: string; address: string }) => {
     setLocation(`${address.address} (${address.zonecode})`);
   };
@@ -70,16 +117,15 @@ const PostLostPet: React.FC = () => {
 
       <Text style={styles.label}>마이펫 불러오기</Text>
       <TouchableOpacity style={styles.petSelector} onPress={() => setModalVisible(true)}>
-        <Text style={styles.petSelectorText}>{selectedPet ? selectedPet.petName : '반려동물 선택'}</Text>
+        <Text style={styles.petSelectorText}>{selectedPet ? selectedPet.petName : '+'}</Text>
       </TouchableOpacity>
 
+      {/* 선택된 반려동물 정보 표시 */}
       {selectedPet && (
-        <View style={styles.petDetails}>
-          <Image source={{ uri: selectedPet.petPhoto }} style={styles.petImage} />
-          <Text>품종: {selectedPet.breed}</Text>
-          <Text>나이: {selectedPet.age}년</Text>
+        <View style={styles.petInfo}>
+          <Text>이름: {selectedPet.petName}</Text>
+          <Text>나이: {selectedPet.age}</Text>
           <Text>성별: {selectedPet.gender}</Text>
-          <Text>위치: {selectedPet.residence}</Text>
           <Text>특징: {selectedPet.feature}</Text>
         </View>
       )}
@@ -106,13 +152,17 @@ const PostLostPet: React.FC = () => {
       {/* 펫 선택 모달 */}
       <PetSelector
         visible={modalVisible}
-        pets={myPets} // DB에서 가져온 반려동물 리스트
-        selectedPet={selectedPet}
-        onSelect={setSelectedPet} // 반려동물 선택 시 해당 반려동물의 정보 처리
-        onClose={() => setModalVisible(false)} // 모달 닫기
+        pets={myPets.map((pet) => pet.petName)}
+        selectedPet={selectedPet ? selectedPet.petName : ''}
+        onSelect={(petName) => {
+          const selected = myPets.find((pet) => pet.petName === petName);
+          setSelectedPet(selected || null);
+          setModalVisible(false);
+        }}
+        onClose={() => setModalVisible(false)}
       />
 
-      {/* 카카오 주소 검색 모달 */}
+      {/* 주소 검색 모달 */}
       <AddressSearchModal
         visible={mapVisible}
         onClose={() => setMapVisible(false)}

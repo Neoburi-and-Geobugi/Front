@@ -5,12 +5,14 @@ import Login from '../screens/Login';
 import HomeScreen from '../screens/HomeScreen';
 import SignUp from '../screens/SingUpScreen';
 import PostLostPet from '../screens/PostLostPet'; // PostLostPet 화면
+import KakaoMapScreen from '../screens/KakaoMapScreen'
 
 type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   Home: undefined;
   PostLostPet: undefined;
+  kakaoMapScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -23,6 +25,7 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="SignUp" component={SignUp} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="PostLostPet" component={PostLostPet}/>
+        <Stack.Screen name="kakaoMapScreen" component={KakaoMapScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

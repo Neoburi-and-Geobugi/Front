@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 모달 배경 투명도
   },
   modalContainer: {
     backgroundColor: '#FFF',
@@ -86,9 +86,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  petItemText: { // petItemText 추가
+    fontSize: 16,
+    color: '#333',
+  },
   petSelected: {
     fontSize: 16,
     color: '#6A5ACD',
+    fontWeight: 'bold',
   },
   mapModal: {
     flex: 1,
@@ -105,6 +110,24 @@ const styles = StyleSheet.create({
   mapCloseButtonText: {
     color: '#FFF',
     fontSize: 16,
+  },
+  modalCloseButton: {
+    backgroundColor: '#6A5ACD',
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  modalCloseButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+  },
+   // 추가된 petInfo 스타일
+   petInfo: {
+    backgroundColor: '#e0e0e0',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 8,
   },
 });
 
