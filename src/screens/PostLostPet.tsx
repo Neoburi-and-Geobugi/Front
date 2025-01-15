@@ -1,14 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; // React Navigation 훅 추가
+import {NavigationProp, useNavigation } from '@react-navigation/native'; // React Navigation 훅 추가
 import AddressSearchModal from '../components/AddressSearchModal';
 import PetSelector from '../components/PetSelector';
 import styles from '../styles/PostLostPetStyles';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
+// 네비게이션 스택 파라미터 타입 정의
+type RootStackParamList = {
+  KakaoMap: undefined; // KakaoMap 화면
+  PostLostPet: undefined; // 현재 화면
+};
+
+
 const PostLostPet: React.FC = () => {
-  const navigation = useNavigation(); // Navigation 객체 생성
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>(); // 타입 지정
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -59,46 +67,43 @@ const PostLostPet: React.FC = () => {
   useEffect(() => {
     fetchMyPets();
   }, [fetchMyPets]);
+// 게시글 등록
+const handleRegister = async () => {
+  if (!title || !description || !location || !selectedPet) {
+    Alert.alert('오류', '모든 필드를 입력해주세요.');
+    return;
+  }
 
-  // 게시글 등록
-  const handleRegister = async () => {
-    if (!title || !description || !location || !selectedPet) {
-      Alert.alert('오류', '모든 필드를 입력해주세요.');
-      return;
-    }
+  try {
+    const token = await getToken();
+    if (!token) {return;}
 
-    try {
-      const token = await getToken();
-      if (!token) {return;}
+    const lostPostData = {
+      title,
+      description,
+      location,
+      petId: selectedPet.id,
+      userId,
+      lostPhoto: '',
+      status: 'active',
+      scrap: 0,
+      createdAt: new Date().toISOString(),
+    };
 
-      const lostPostData = {
-        title,
-        description,
-        location,
-        petId: selectedPet.id,
-        userId,
-        lostPhoto: '',
-        status: 'active',
-        scrap: 0,
-        createdAt: new Date().toISOString(),
-      };
+    const response = await axios.post('http://10.0.2.2:8080/lost-posts', lostPostData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const response = await axios.post('http://10.0.2.2:8080/lost-posts', lostPostData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    Alert.alert('등록 완료', '게시물이 등록되었습니다!');
+    console.log('등록된 LostPost:', response.data);
 
-      Alert.alert('등록 완료', '게시물이 등록되었습니다!');
-      console.log('등록된 LostPost:', response.data);
-
-      // 지도 화면으로 이동
-      navigation.replace('kakaoMapScreen');
-    } catch (error: any) {
-      console.error('게시물 등록 실패:', error);
-      const errorMessage = error.response?.data?.message || '게시물 등록에 실패했습니다.';
-      Alert.alert('오류', errorMessage);
-    }
+    navigation.navigate('KakaoMap');
+  } catch (error: any) {
+    console.error('게시물 등록 실패:', error);
+    const errorMessage = error.response?.data?.message || '게시물 등록에 실패했습니다.';
+    Alert.alert('오류', errorMessage);
+   }
   };
-
   // 주소 선택 핸들러
   const handleAddressSelected = (address: { zonecode: string; address: string }) => {
     setLocation(`${address.address} (${address.zonecode})`);
